@@ -347,8 +347,10 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
     }
 
     public ngAfterViewInit(): void {
-        this.updateCalendar(this.value);
-        this.updateTimer(this.value);
+        if(this.value) {
+            this.updateCalendar(this.value);
+            this.updateTimer(this.value);
+        }
     }
 
     public ngOnDestroy(): void {
@@ -356,7 +358,7 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
     }
 
     public writeValue( obj: any ): void {
-
+        console.log('writeValue: ' + obj)
         if (obj instanceof Array) {
             this.value = [];
             for (let o of obj) {
@@ -610,6 +612,30 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
         this.setSelectedTime(selectedTime);
         event.preventDefault();
         return;
+    }
+
+    input(event: any) {
+        console.log('event.' + event.target.value);
+
+        let a  = event.target.value
+        if(/^[0-9]{2}:?[0-9]{2}$/.test(a)) {
+            if(this.type === 'timer') {
+                let b = a.slice(0, 2);
+                let c = a.slice(a.length -2);
+
+                let d = new Date();
+
+                let d1 = setHours(d, b);
+                let d2 = setMinutes(d1, c);
+                // updateModel
+                console.log(d2);
+                this.selectDate(event, d2);
+                this.updateCalendar(d2);
+                this.updateModel(d2)
+                this.updateFormattedValue();
+            }
+        }
+
     }
 
     /**
@@ -1209,6 +1235,7 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
      * @return {boolean}
      * */
     private updateTimer( value: Date ): boolean {
+        console.log('updateTimer');
 
         // if the dateTime picker is only the calendar,
         // no need to update the timer
@@ -1254,6 +1281,7 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
      * @return {Boolean}
      * */
     private updateModel( value: Date | Date[] ): boolean {
+        console.log('updateModel: ' + value)
         this.value = value;
         if (this.dataType === 'date') {
             this.onModelChange(this.value);
@@ -1281,6 +1309,7 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
      * */
     private updateFormattedValue(): void {
         let formattedValue = '';
+        console.log('updateFormattedValue: ')
 
         if (this.value) {
             if (this.isSingleSelection()) {

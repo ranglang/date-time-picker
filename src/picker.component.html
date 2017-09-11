@@ -17,6 +17,7 @@
                [attr.required]="required"
                [disabled]="disabled"
                [value]="formattedValue"
+               (input) ="input($event)"
                (focus)="onInputFocus($event)" (blur)="onInputBlur($event)" (click)="onInputClick($event)">
         <i class="owl-dateTime-cancel icon icon-cancel" [hidden]="!value" (click)="clearValue($event)"></i>
     </div>
