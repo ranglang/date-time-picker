@@ -36,8 +36,14 @@ import {
     isAfter,
     compareAsc,
     startOfDay,
+    setDate,
     format,
 } from 'date-fns';
+
+
+// import  * as setDate from 'date-fns/set_date/index';
+
+
 import { NumberFixedLenPipe } from './numberedFixLen.pipe';
 
 export interface LocaleSettings {
@@ -477,6 +483,26 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
         return;
     }
 
+    public selectDate1( event: any, date: Date ): void {
+
+        if (this.disabled || !date) {
+            event.preventDefault();
+            return;
+        }
+        let selected = date;
+        if (selected) {
+            this.updateModel(selected);
+            if (this.value instanceof Array) {
+                this.updateCalendar(this.value[this.valueIndex]);
+                this.updateTimer(this.value[this.valueIndex]);
+            } else {
+                this.updateCalendar(this.value);
+                this.updateTimer(this.value);
+            }
+            this.updateFormattedValue();
+        }
+    }
+
     /**
      * Select a date
      * @param {any} event
@@ -618,8 +644,8 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
         console.log('event.' + event.target.value);
 
         let a  = event.target.value
-        if(/^[0-9]{2}:?[0-9]{2}$/.test(a)) {
-            if(this.type === 'timer') {
+        if(this.type === 'timer') {
+            if(/^[0-9]{2}:?[0-9]{2}$/.test(a)) {
                 let b = a.slice(0, 2);
                 let c = a.slice(a.length -2);
 
@@ -628,14 +654,76 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
                 let d1 = setHours(d, b);
                 let d2 = setMinutes(d1, c);
                 // updateModel
-                console.log(d2);
-                this.selectDate(event, d2);
-                this.updateCalendar(d2);
-                this.updateModel(d2)
-                this.updateFormattedValue();
+
+                if(isValid(d2)){
+
+                    // this.value = new Date();
+                    this.selectDate1(event, new Date());
+                    // this.updateModel(null);
+                    // this.clearValue(event);
+
+
+                    // isSameDay,
+                    //     isSameMonth,
+
+
+                    // this.selectDate1(event, d2);
+
+                    setTimeout(() => {
+                        // this.selectDate1(event, new Date());
+                        this.selectDate1(event, d2);
+                    }, 20)
+
+                    // this.updateCalendar(d2);
+                    // this.updateFormattedValue();
+                    // this.updateModel(d2)
+                    this.hide();
+                }
+            }
+        } else if(this.type==='calendar') {
+            if(/^[0-9]{2}(-|\.)?[0-9]{2}$/.test(a)) {
+                let b = a.slice(0, 2);
+                let c = a.slice(a.length -2);
+
+
+                // this.value = null;
+                // this.value = undefined;
+                // this.clearValue(event);
+
+                console.log('date: ' + "2017-"+ b+'-'+c, "YYYY-MM-DD");
+                let d2 = parse("2017-"+ b+'-'+c, "YYYY-MM-DD");
+                // let d = new Date();
+                // console.log('month: ' + Number(b))
+                // console.log('date: ' + Number(c))
+                //
+                // let d1 = setMonth(d, Number(b));
+                // let d2 = setDate(d1, Number(c));
+                // updateModel
+
+
+                if(isValid(d2)) {
+                    // this.value = null;
+                    // this.updateModel(null);
+                    // this.selectDate(event, d2);
+
+                    if( this.value && isSameMonth(this.value, d2) && isSameDay(this.value, d2)) {
+                        this.selectDate1(event, new Date());
+                        setTimeout(() => {
+                            this.selectDate1(event, d2);
+                        }, 20);
+                    } else {
+                        this.selectDate1(event, d2);
+                    }
+
+                    // if (!isSameDay(this.value, d2)) {
+                        // this.updateFormattedValue();
+                        // this.updateModel(d2)
+                        // this.updateCalendar(d2);
+                    // }
+                    this.hide();
+                }
             }
         }
-
     }
 
     /**
@@ -1309,7 +1397,6 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
      * */
     private updateFormattedValue(): void {
         let formattedValue = '';
-        console.log('updateFormattedValue: ')
 
         if (this.value) {
             if (this.isSingleSelection()) {
@@ -1337,6 +1424,7 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
         }
 
         this.formattedValue = formattedValue;
+        console.log('this.formattedValue: ' + this.formattedValue);
 
         return;
     }
