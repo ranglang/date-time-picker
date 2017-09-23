@@ -19,7 +19,7 @@
                [value]="formattedValue"
                (input) ="input($event)"
                (focus)="onInputFocus($event)" (blur)="onInputBlur($event)" (click)="onInputClick($event)">
-        <i class="owl-dateTime-cancel icon icon-cancel" [hidden]="!value" (click)="clearValue($event)"></i>
+        <i class="owl-dateTime-cancel icon icon-cancel" [hidden]="!value || disabled || focus" (click)="clearValue($event)"></i>
     </div>
     <!-- Workaround of ng-content default content (angular issue #12530) -->
     <div [ngClass]="{'owl-dateTime-customTemp': customTemp.children.length !== 0}" #customTemp (click)="onInputClick($event)">

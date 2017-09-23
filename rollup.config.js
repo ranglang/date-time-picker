@@ -50,6 +50,7 @@ export default {
                     'setMinutes',
                     'getSeconds',
                     'setSeconds',
+                    'setDate',
                     'isBefore',
                     'isAfter',
                     'startOfDay',
