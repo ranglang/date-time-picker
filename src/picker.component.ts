@@ -367,7 +367,7 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
     }
 
     public writeValue( obj: any ): void {
-        console.log('writeValue: ' + obj)
+        // console.log('writeValue: ' + obj)
         if (obj instanceof Array) {
             this.value = [];
             for (let o of obj) {
@@ -647,7 +647,7 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
     }
 
     input(event: any) {
-        console.log('event.' + event.target.value);
+        // console.log('event.' + event.target.value);
 
 
 
@@ -672,7 +672,7 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
                     if (isValid(d2)) {
 
                         // this.value = new Date();
-                        this.selectDate1(event, new Date());
+                        // this.selectDate1(event, new Date());
                         // this.updateModel(null);
                         // this.clearValue(event);
 
@@ -702,7 +702,7 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
                     // this.value = undefined;
                     // this.clearValue(event);
 
-                    console.log('date: ' + "2017-" + b + '-' + c, "YYYY-MM-DD");
+                    // console.log('date: ' + "2017-" + b + '-' + c, "YYYY-MM-DD");
                     let d2 = parse("2017-" + b + '-' + c, "YYYY-MM-DD");
                     // let d = new Date();
                     // console.log('month: ' + Number(b))
@@ -1129,14 +1129,27 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
     private alignDialog(): void {
         let element = this.dialogElm.nativeElement;
         let target = this.containerElm.nativeElement;
+        // console.log(target);
+        // console.log(element);
+
         let elementDimensions = element.offsetParent ? {
             width: element.offsetWidth,
             height: element.offsetHeight
         } : this.getHiddenElementDimensions(element);
+
+        // console.log('elementDimensions');
+        // console.log(elementDimensions);
+
         let targetHeight = target.offsetHeight;
+        // console.log('targetHeight :' + targetHeight );
         let targetWidth = target.offsetWidth;
+        // console.log('targetWidth :' + targetWidth);
         let targetOffset = target.getBoundingClientRect();
+        // console.log('targetOffset ');
+        // console.log(targetOffset);
         let viewport = this.getViewport();
+        // console.log('viewport');
+        // console.log(viewport);
         let top, left;
 
         if ((targetOffset.top + targetHeight + elementDimensions.height) > viewport.height) {
@@ -1146,14 +1159,19 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
             }
         }
         else {
+            // console.log('inside viewport.height');
             top = targetHeight;
         }
 
 
-        if ((targetOffset.left + elementDimensions.width) > viewport.width)
+        if ((targetOffset.left + elementDimensions.width) > viewport.width) {
+            // console.log('> viewport.width');
             left = targetWidth - elementDimensions.width;
-        else
+        }
+        else {
+            // console.log('inside viewport.width');
             left = 0;
+        }
 
         element.style.top = top + 'px';
         element.style.left = left + 'px';
@@ -1336,7 +1354,7 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
      * @return {boolean}
      * */
     private updateTimer( value: Date ): boolean {
-        console.log('updateTimer');
+        // console.log('updateTimer');
 
         // if the dateTime picker is only the calendar,
         // no need to update the timer
@@ -1382,7 +1400,7 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
      * @return {Boolean}
      * */
     private updateModel( value: Date | Date[] ): boolean {
-        console.log('updateModel: ' + value)
+        // console.log('updateModel: ' + value)
         this.value = value;
         if (this.dataType === 'date') {
             this.onModelChange(this.value);
@@ -1437,7 +1455,7 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
         }
 
         this.formattedValue = formattedValue;
-        console.log('this.formattedValue: ' + this.formattedValue);
+        // console.log('this.formattedValue: ' + this.formattedValue);
 
         return;
     }
@@ -1518,6 +1536,7 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
     }
 
     private getHiddenElementDimensions( element: any ): any {
+        // console.log('getHiddenElementDimensions');
         let dimensions: any = {};
         element.style.visibility = 'hidden';
         element.style.display = 'block';
@@ -1536,7 +1555,6 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
             g = d.getElementsByTagName('body')[0],
             w = win.innerWidth || e.clientWidth || g.clientWidth,
             h = win.innerHeight || e.clientHeight || g.clientHeight;
-
         return {width: w, height: h};
     }
 }
