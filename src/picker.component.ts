@@ -656,41 +656,27 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
         if (a === '') {
             this.clearValue(event)
         }else {
-
-
-            if (this.type === 'timer') {
+            if(this.type === 'both') {
+                const d2 = parse(a)
+                if (/[0|1|2][0-9]:[0-9]{2}:[0-9]{2}$/.test(a)) {
+                    if (isValid(d2)) {
+                        setTimeout(() => {
+                            this.selectDate1(event, d2);
+                        }, 20);
+                        this.hide();
+                    }
+                }
+            }else if (this.type === 'timer') {
                 if (/^[0|1|2][0-9]:?[0-9]{2}$/.test(a)) {
                     let b = a.slice(0, 2);
                     let c = a.slice(a.length - 2);
-
                     let d = new Date();
-
                     let d1 = setHours(d, b);
                     let d2 = setMinutes(d1, c);
-                    // updateModel
-
                     if (isValid(d2)) {
-
-                        // this.value = new Date();
-                        // this.selectDate1(event, new Date());
-                        // this.updateModel(null);
-                        // this.clearValue(event);
-
-
-                        // isSameDay,
-                        //     isSameMonth,
-
-
-                        // this.selectDate1(event, d2);
-
                         setTimeout(() => {
-                            // this.selectDate1(event, new Date());
                             this.selectDate1(event, d2);
-                        }, 20)
-
-                        // this.updateCalendar(d2);
-                        // this.updateFormattedValue();
-                        // this.updateModel(d2)
+                        }, 20);
                         this.hide();
                     }
                 }
@@ -698,26 +684,8 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
                 if (/^[0|1][0-9](-|\.)?[0-9]{2}$/.test(a)) {
                     let b = a.slice(0, 2);
                     let c = a.slice(a.length - 2);
-                    // this.value = null;
-                    // this.value = undefined;
-                    // this.clearValue(event);
-
-                    // console.log('date: ' + "2017-" + b + '-' + c, "YYYY-MM-DD");
                     let d2 = parse("2017-" + b + '-' + c, "YYYY-MM-DD");
-                    // let d = new Date();
-                    // console.log('month: ' + Number(b))
-                    // console.log('date: ' + Number(c))
-                    //
-                    // let d1 = setMonth(d, Number(b));
-                    // let d2 = setDate(d1, Number(c));
-                    // updateModel
-
-
                     if (isValid(d2)) {
-                        // this.value = null;
-                        // this.updateModel(null);
-                        // this.selectDate(event, d2);
-
                         if (this.value && isSameMonth(this.value, d2) && isSameDay(this.value, d2)) {
                             this.selectDate1(event, new Date());
                             setTimeout(() => {
@@ -726,12 +694,6 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
                         } else {
                             this.selectDate1(event, d2);
                         }
-
-                        // if (!isSameDay(this.value, d2)) {
-                        // this.updateFormattedValue();
-                        // this.updateModel(d2)
-                        // this.updateCalendar(d2);
-                        // }
                         this.hide();
                     }
                 }
@@ -1185,6 +1147,7 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
         let firstClick = true;
         if (!this.documentClickListener) {
             this.documentClickListener = this.renderer.listen('document', 'click', () => {
+                console.log('click');
                 if (!firstClick && !this.dialogClick) {
                     this.hide();
                 }
