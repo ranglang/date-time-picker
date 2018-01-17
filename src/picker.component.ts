@@ -4,11 +4,12 @@
 
 import {
     AfterViewInit,
-    Component, ElementRef, EventEmitter, forwardRef, Input, OnDestroy, OnInit, Output, Renderer2,
+    Component, ElementRef, EventEmitter, forwardRef, Input, NgZone, OnChanges, OnDestroy, OnInit, Output, Renderer2,
+    SimpleChanges,
     ViewChild
 } from '@angular/core';
 import { animate, state, style, transition, trigger } from '@angular/animations';
-import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import {ControlValueAccessor, NG_VALUE_ACCESSOR, NG_VALIDATORS, FormControl, Validator} from '@angular/forms';
 import {
     parse,
     isValid,
@@ -40,9 +41,37 @@ import {
     format,
 } from 'date-fns';
 
+export function createCounterRangeValidator(min: any, max: any) {
+    return function validateCounterRange(c: FormControl) {
+        console.log('c.value', c.value,  'min', min, 'max', max)
+        let ret  = null ;
+        if (!isValid(parse(c.value))) {
+            ret =   {
+                rangeError: {
+                    valid: '请勿输入合适的时间',
+                }
+            };
+        } else {
+            let err = {
+                rangeError: {
+                    given: '请勿输入合适的时间',
+                }
+            };
 
-// import  * as setDate from 'date-fns/set_date/index';
+            if (min && isBefore(c.value, min)) {
+                ret = err;
+            }
 
+            if ( max && isAfter(c.value, max) ) {
+
+                ret = err;
+            }
+        }
+
+        console.log(`ret${ret}`)
+        return ret;
+    }
+}
 
 import { NumberFixedLenPipe } from './numberedFixLen.pipe';
 import {DomHandler} from "./domhander";
@@ -63,17 +92,24 @@ export enum DialogType {
     Year,
 }
 
+// 2018.01.09oowj
+
 export const DATETIMEPICKER_VALUE_ACCESSOR: any = {
     provide: NG_VALUE_ACCESSOR,
     useExisting: forwardRef(() => DateTimePickerComponent),
     multi: true
 };
+export const DATETIMEPICKER_VALIDATOR: any = {
+    provide: NG_VALIDATORS,
+        useExisting: forwardRef(() => DateTimePickerComponent),
+    multi: true
+}
 
 @Component({
     selector: 'owl-date-time',
     templateUrl: './picker.component.html',
     styleUrls: ['./picker.component.scss'],
-    providers: [NumberFixedLenPipe, DATETIMEPICKER_VALUE_ACCESSOR],
+    providers: [NumberFixedLenPipe, DATETIMEPICKER_VALUE_ACCESSOR, DATETIMEPICKER_VALIDATOR],
     animations: [
         trigger('fadeInOut', [
             state('hidden', style({
@@ -90,7 +126,17 @@ export const DATETIMEPICKER_VALUE_ACCESSOR: any = {
     ],
 })
 
-export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy, ControlValueAccessor {
+export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy, ControlValueAccessor, OnChanges, Validator {
+
+    validate(c: FormControl) {
+        return this.validateFn(c);
+    }
+
+    ngOnChanges(changes: SimpleChanges): void {
+        if (changes.min || changes.max) {
+            this.validateFn = createCounterRangeValidator(this.min, this.max);
+        }
+    }
 
     /**
      * Type of the value to write back to ngModel
@@ -259,7 +305,7 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
      * @default 'both'
      * @type {'both' | 'calendar' | 'timer'}
      * */
-    @Input() type: 'both' | 'calendar' | 'timer' = 'both';
+    @Input() type: 'both' | 'calendar' | 'timer' | 'month' = 'both';
 
     /**
      * An object having regional configuration properties for the dateTimePicker
@@ -279,6 +325,8 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
      * @type {'24'| '12'}
      * */
     @Input() hourFormat: '12' | '24' = '24';
+
+    validateFn:Function;
 
     /**
      * When it is set to false, only show current month's days in calendar
@@ -341,18 +389,27 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
     };
 
     constructor( private renderer: Renderer2,
+                 private _ngZone: NgZone,
                  public el: ElementRef, public domHandler: DomHandler,
                  private numFixedLenPipe: NumberFixedLenPipe ) {
 
     }
 
     public ngOnInit() {
-        this.pickerMoment = new Date();
 
-        if (this.type === 'both' || this.type === 'calendar') {
+        this.validateFn = createCounterRangeValidator(this.min, this.max);
+
+        this.pickerMoment = new Date();
+        if (this.type === 'both' || this.type === 'calendar' || this.type==='month') {
             this.generateWeekDays();
             this.generateMonthList();
+
+            if (this.type==='month') {
+                this.changeDialogType(DialogType.Month)
+            }
         }
+
+
     }
 
     public ngAfterViewInit(): void {
@@ -401,7 +458,7 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
      * @return {void}
      * */
     public onInputClick( event: any ): void {
-
+        console.log('onInputClick');
         if (this.disabled) {
             event.preventDefault();
             return;
@@ -491,20 +548,24 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
     public selectDate1( event: any, date: Date ): void {
 
         if (this.disabled || !date) {
-            event.preventDefault();
+            if(event) {
+                event.preventDefault();
+            }
             return;
         }
         let selected = date;
         if (selected) {
-            this.updateModel(selected);
-            if (this.value instanceof Array) {
-                this.updateCalendar(this.value[this.valueIndex]);
-                this.updateTimer(this.value[this.valueIndex]);
-            } else {
-                this.updateCalendar(this.value);
-                this.updateTimer(this.value);
-            }
-            this.updateFormattedValue();
+            this._ngZone.run(() => {
+                this.updateModel(selected);
+                if (this.value instanceof Array) {
+                    this.updateCalendar(this.value[this.valueIndex]);
+                    this.updateTimer(this.value[this.valueIndex]);
+                } else {
+                    this.updateCalendar(this.value);
+                    this.updateTimer(this.value);
+                }
+                this.updateFormattedValue();
+            });
         }
     }
 
@@ -579,6 +640,7 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
         }
 
         if (selected) {
+            console.log("selected");
             this.updateModel(selected);
             if (this.value instanceof Array) {
                 this.updateCalendar(this.value[this.valueIndex]);
@@ -588,6 +650,11 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
                 this.updateTimer(this.value);
             }
             this.updateFormattedValue();
+            this.hide();
+            if(event) {
+                event.stopPropagation();
+                event.preventDefault();
+            }
         }
     }
 
@@ -596,10 +663,26 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
      * @param {Number} monthNum
      * @return {void}
      * */
-    public selectMonth( monthNum: number ): void {
-        this.pickerMoment = setMonth(this.pickerMoment, monthNum);
-        this.generateCalendar();
-        this.changeDialogType(DialogType.Month);
+    public selectMonth( monthNum: number, event: any ): void {
+        // console.log('selectMonth:' + monthNum);
+        if (this.checkIsValidMonth(monthNum)) {
+            if (this.type==='month') {
+                console.log('type === month');
+                this.pickerMoment = setMonth(this.pickerMoment, monthNum);
+                this.selectDate1(undefined, this.pickerMoment);
+                console.log('this.hide')
+                this.hide();
+                if (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+            } else {
+                // console.log('month else');
+                this.pickerMoment = setMonth(this.pickerMoment, monthNum);
+                this.generateCalendar();
+                this.changeDialogType(DialogType.Month);
+            }
+        }
     }
 
     /**
@@ -609,8 +692,14 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
      * */
     public selectYear( yearNum: number ): void {
         this.pickerMoment = setYear(this.pickerMoment, yearNum);
-        this.generateCalendar();
-        this.changeDialogType(DialogType.Year);
+        if (this.type== 'month') {
+            this.dialogType =  DialogType.Month;
+            this.pickerMonth = this.locale.monthNames[getMonth(this.pickerMoment)];
+            this.pickerYear = getYear(this.pickerMoment).toString();
+        }else {
+            this.generateCalendar();
+            this.changeDialogType(DialogType.Year);
+        }
     }
 
     /**
@@ -648,20 +737,28 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
     input(event: any) {
         let a  = event.target.value;
 
+
+        let found =  false;
         if (a === '') {
             this.clearValue(event)
         }else {
-            if(this.type === 'both') {
-                const d2 = parse(a)
+            if (this.type === 'both') {
+                let d2 = parse(a);
                 if (/[0|1|2][0-9]:[0-9]{2}:[0-9]{2}$/.test(a)) {
                     if (isValid(d2)) {
-                        setTimeout(() => {
-                            this.selectDate1(event, d2);
-                        }, 20);
+                         found = true;
+                        this.selectDate1(event, d2);
+                        this.hide();
+                    }
+                } else if (/[0|1|2][0-9]:[0-9]{2}$/.test(a)) {
+                    d2 =  parse(a + ':00');
+                    if (isValid(d2)) {
+                         found = true;
+                        this.selectDate1(event, d2);
                         this.hide();
                     }
                 }
-            }else if (this.type === 'timer') {
+            } else if (this.type === 'timer') {
                 if (/^[0|1|2][0-9]:?[0-9]{2}$/.test(a)) {
                     let b = a.slice(0, 2);
                     let c = a.slice(a.length - 2);
@@ -669,9 +766,8 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
                     let d1 = setHours(d, b);
                     let d2 = setMinutes(d1, c);
                     if (isValid(d2)) {
-                        setTimeout(() => {
-                            this.selectDate1(event, d2);
-                        }, 20);
+                        found = true;
+                        this.selectDate1(event, d2);
                         this.hide();
                     }
                 }
@@ -679,20 +775,65 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
                 if (/^[0|1][0-9](-|\.)?[0-9]{2}$/.test(a)) {
                     let b = a.slice(0, 2);
                     let c = a.slice(a.length - 2);
-                    let d2 = parse("2017-" + b + '-' + c, "YYYY-MM-DD");
+
+                    let year = format(new Date(), 'YYYY');
+                    let d2 = parse(`${year}-${b}-${c}`, "YYYY-MM-DD");
+
                     if (isValid(d2)) {
+                        found = true;
                         if (this.value && isSameMonth(this.value, d2) && isSameDay(this.value, d2)) {
-                            this.selectDate1(event, new Date());
-                            setTimeout(() => {
-                                this.selectDate1(event, d2);
-                            }, 20);
+                            // this.selectDate1(event, new Date());
+                            this.selectDate1(event, d2);
                         } else {
                             this.selectDate1(event, d2);
                         }
                         this.hide();
                     }
                 }
+
+                if (/[0|1|2][0-9]{3}(-|\.)?[0|1][0-9](-|\.)?[0-9]{2}$/.test(a)) {
+                    let d2 = parse(a, "YYYY.MM.DD");
+                    if (!isValid(d2)){
+                        d2 = parse(a, "YYYY-MM-DD");
+                    }
+                    if (isValid(d2)) {
+                        found = true;
+                        if (this.value && isSameMonth(this.value, d2) && isSameDay(this.value, d2)) {
+                            this.selectDate1(event, new Date());
+                             this.selectDate1(event, d2);
+                        } else {
+                            this.selectDate1(event, d2);
+                        }
+                        this.hide();
+                    }
+                }
+            } else if (this.type === 'month') {
+                if (/[0|1|2][0-9]{3}(-|\.)[0|1][0-9]$/.test(a)) {
+                    let d2 = parse(a, "YYYY.MM");
+
+                    if (isValid(d2)){
+                        found = true;
+                        this.selectDate1(event, d2);
+                        this.hide();
+                    }
+                } else if (/^[0|1|2][0-9]{3}[0|1][0-9]$/.test(a)) {
+
+                    let year = a.substr(0, 4);
+                    let month = a.substr(4, 2);
+
+                    let d2 = parse(`${year}-${month}`, "YYYY-MM");
+                    console.log("year", year, "month", month, "a", a, "d2", d2);
+                    if(isValid(d2)) {
+                        found = true;
+                        this.selectDate1(event, d2);
+                        this.hide();
+                    }
+                }
             }
+        }
+        if (! found) {
+            this.onModelChange(undefined);
+            console.log('not found ');
         }
     }
 
@@ -922,6 +1063,21 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
         }
     }
 
+    checkIsValidMonth (month: number) {
+        // console.log('month', month);
+        const m = setMonth(this.pickerMoment, month);
+        // console.log('m', m)
+        let isValid = true;
+        if (this.min) {
+            // console.log('startOfDay(this.min)', startOfDay(this.min));
+
+            // console.log('isBefore', isBefore(m, startOfDay(this.min)));
+            isValid = !isBefore(m, startOfDay(this.min));
+        }
+        // console.log('isValid', isValid);
+        return isValid;
+    }
+
     /**
      * Check if the calendar day is a valid day
      * @param {Date}  date
@@ -977,15 +1133,27 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
      * @return {void}
      * */
     public changeDialogType( type: DialogType ): void {
+        // console.log('changeDialogType', type)
         if (this.dialogType === type) {
-            this.dialogType = DialogType.Date;
+            // console.log('DialogType.Date');
+            if (this.type !== 'month') {
+                this.dialogType = DialogType.Date;
+            }
             return;
         } else {
+            // console.log('DialogType,');
             this.dialogType = type;
         }
 
         if (this.dialogType === DialogType.Year) {
+            // console.log('DialogType.Year');
             this.generateYearList();
+        }
+
+        if (type === DialogType.Month) {
+            // console.log('DialogType.Year');
+            // this.generateYearList();
+            this.dialogType = type;
         }
     }
 
@@ -1062,9 +1230,14 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
      * @return {void}
      * */
     private show(): void {
+        console.log('show');
+
         this.alignDialog();
         this.dialogVisible = true;
-        this.dialogType = DialogType.Date;
+        this.dialogType = this.type==='month' ? DialogType.Month :  DialogType.Date;
+        // console.log('this.dialogVisible ', this.dialogVisible);
+        // console.log('this.dialogType ', this.dialogType);
+        console.log('datetime bindDocumentClickListener');
         this.bindDocumentClickListener();
         return;
     }
@@ -1074,6 +1247,7 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
      * @return {void}
      * */
     private hide(): void {
+        console.log("hide");
         this.dialogVisible = false;
         this.unbindDocumentClickListener();
         return;
@@ -1093,9 +1267,11 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
         } : this.getHiddenElementDimensions(element);
 
 
+
         let targetHeight = target.offsetHeight;
         let targetWidth = target.offsetWidth;
         let targetOffset = target.getBoundingClientRect();
+
         let viewport = this.getViewport();
         let top, left;
 
@@ -1285,7 +1461,11 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
         if (value && (!this.calendarDays || !isSameMonth(value, this.pickerMoment))) {
             this.pickerMoment = setMonth(this.pickerMoment, getMonth(value));
             this.pickerMoment = setYear(this.pickerMoment, getYear(value));
+
             this.generateCalendar();
+            if (this.type === 'month') {
+                this.changeDialogType(DialogType.Month)
+            }
         } else if (!value && !this.calendarDays) {
             this.generateCalendar();
         }
@@ -1299,7 +1479,7 @@ export class DateTimePickerComponent implements OnInit, AfterViewInit, OnDestroy
      * */
     private updateTimer( value: Date ): boolean {
         // no need to update the timer
-        if (this.type === 'calendar') {
+        if (this.type === 'calendar' || this.type === 'month') {
             return false;
         }
 

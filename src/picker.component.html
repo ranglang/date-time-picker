@@ -1,3 +1,7 @@
+
+<!--{{ 'showHeader': showHeader }}-->
+<!--{{ 'type': type }}-->
+<!--{{ 'correct': type ==='both' || type === 'calendar'||type ==='month'}}-->
 <div [ngClass]="{
      'owl-dateTime owl-widget': true,
      'owl-dateTime-inline': inline
@@ -21,7 +25,6 @@
                (focus)="onInputFocus($event)" (blur)="onInputBlur($event)" (click)="onInputClick($event)">
         <i class="owl-dateTime-cancel icon icon-cancel" [hidden]="!value || disabled || focus" (click)="clearValue($event)"></i>
     </div>
-    <!-- Workaround of ng-content default content (angular issue #12530) -->
     <div [ngClass]="{'owl-dateTime-customTemp': customTemp.children.length !== 0}" #customTemp (click)="onInputClick($event)">
         <ng-content></ng-content>
     </div>
@@ -33,17 +36,17 @@
             <span *ngIf="value; else elseBlock">{{formattedValue}}</span>
             <ng-template #elseBlock><span>{{placeHolder}}</span></ng-template>
         </div>
-        <div *ngIf="type ==='both' || type === 'calendar'" class="owl-calendar-wrapper owl-corner-all">
+        <div *ngIf="type ==='both' || type === 'calendar'||type ==='month'" class="owl-calendar-wrapper owl-corner-all">
             <div class="owl-calendar-control">
-                <div class="owl-calendar-controlNav">
-                    <span class="nav-prev" (click)="prevMonth($event)"></span>
+                <div class="owl-calendar-controlNav" (click)="prevMonth($event)">
+                    <span class="nav-prev" ></span>
                 </div>
                 <div class="owl-calendar-controlContent">
                     <span class="month-control" (click)="changeDialogType(2)">{{pickerMonth}}</span>
                     <span class="year-control" (click)="changeDialogType(3)">{{pickerYear}}</span>
                 </div>
-                <div class="owl-calendar-controlNav">
-                    <span class="nav-next" (click)="nextMonth($event)"></span>
+                <div class="owl-calendar-controlNav" (click)="nextMonth($event)">
+                    <span class="nav-next"></span>
                 </div>
             </div>
             <div class="owl-calendar" [hidden]="dialogType !== 1">
@@ -76,8 +79,8 @@
                     <tbody>
                     <tr class="owl-months" *ngFor="let months of calendarMonths; let i = index">
                         <td *ngFor="let month of months; let j = index" class="owl-month"
-                            [ngClass]="{'owl-calendar-selected': isCurrentMonth(i*3 + j)}"
-                            (click)="selectMonth(i*3 + j)">
+                            [ngClass]="{'owl-calendar-selected': isCurrentMonth(i*3 + j), 'owl-calender-invalid': !checkIsValidMonth (i*3 + j) }"
+                            (click)="selectMonth(i*3 + j, $event)">
                             <a>{{month}}</a>
                         </td>
                     </tr>
@@ -96,10 +99,10 @@
                     </tr>
                     </tbody>
                 </table>
-                <div class="owl-calendar-yearArrow left" (click)="generateYearList('prev')">
+                <div class="owl-calendar-yearArrow left1" (click)="generateYearList('prev')">
                     <i class="icon icon-left-open"></i>
                 </div>
-                <div class="owl-calendar-yearArrow right" (click)="generateYearList('next')">
+                <div class="owl-calendar-yearArrow right1" (click)="generateYearList('next')">
                     <i class="icon icon-right-open"></i>
                 </div>
             </div>
